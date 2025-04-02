@@ -1,0 +1,94 @@
+ // async fn connect_and_send(
+    //     addr: SocketAddr,
+    //     payload: RequestPayload,
+    // ) -> Result<AttestationMessage> {
+    //     let conn = TcpStream::connect(addr)
+    //         .await
+    //         .map_err(|e| anyhow!("Failed to connect to {}: {}", addr, e))?;
+
+    //     let req = HyperRequest::builder()
+    //         .method("GET")
+    //         .uri(format!("ws://{}", addr)) // Fix the URI format
+    //         .header("Host", addr.to_string())
+    //         .header(UPGRADE, "websocket")
+    //         .header(CONNECTION, "upgrade")
+    //         .header(
+    //             "Sec-WebSocket-Key",
+    //             fastwebsockets::handshake::generate_key(),
+    //         )
+    //         .header("Sec-WebSocket-Version", "13")
+    //         .body(Empty::<Bytes>::new())?;
+
+    //     let (ws, _) = handshake::client(&SpawnExecutor, req, conn)
+    //         .await
+    //         .map_err(|e| anyhow!("WebSocket handshake failed: {}", e))?;
+
+    //     let mut ws = FragmentCollector::new(ws);
+
+    //     // Send the payload with timeout
+    //     let json = serde_json::to_string(&payload)?;
+    //     timeout(
+    //         Duration::from_millis(ATTESTATION_TIMEOUT),
+    //         ws.write_frame(Frame::text(json.as_bytes().into())),
+    //     )
+    //     .await??;
+
+    //     // Wait for response with timeout
+    //     let frame = timeout(Duration::from_millis(ATTESTATION_TIMEOUT), ws.read_frame()).await??;
+
+    //     match frame.opcode {
+    //         fastwebsockets::OpCode::Close => Err(anyhow!("Server closed connection")),
+    //         fastwebsockets::OpCode::Text => {
+    //             let attestation = serde_json::from_slice::<AttestationMessage>(&frame.payload)
+    //                 .map_err(|e| anyhow!("Failed to parse attestation: {}", e))?;
+
+    //             // Properly close the connection
+    //             ws.write_frame(Frame::close(1000, b""))
+    //                 .await
+    //                 .map_err(|e| anyhow!("Failed to send close frame: {}", e))?;
+
+    //             Ok(attestation)
+    //         }
+    //         _ => Err(anyhow!("Unexpected frame type: {:?}", frame.opcode)),
+    //     }
+    // }
+
+    // pub async fn broadcast(
+    //     &self,
+    //     payload: RequestPayload,
+    // ) -> impl Stream<Item = Result<AttestationMessage>> {
+    //     let payload = Arc::new(payload);
+    //     let futures = FuturesUnordered::new();
+
+    //     for (replica, (addr, _timestamp)) in self.replicas.iter() {
+    //         let payload = (*payload).clone(); // Clone the payload instead of Arc
+    //         let addr = *addr;
+
+    //         let future = tokio::spawn(async move {
+    //             let backoff = ExponentialBackoffBuilder::new()
+    //                 .with_max_elapsed_time(Some(Duration::from_millis(MAX_BROADCAST_TIME)))
+    //                 .with_initial_interval(Duration::from_millis(100))
+    //                 .with_multiplier(1.5)
+    //                 .build();
+
+    //             backoff::future::retry(backoff, || async {
+    //                 match Self::connect_and_send(addr, payload.clone()).await {
+    //                     Ok(attestation) => Ok(attestation),
+    //                     Err(e) => {
+    //                         log::error!("Failed to send payload to {}: {:?}", addr, e);
+    //                         Err(backoff::Error::transient(e))
+    //                     }
+    //                 }
+    //             })
+    //             .await
+    //         });
+
+    //         futures.push(future);
+    //     }
+
+    //     futures.map(|result| match result {
+    //         Ok(Ok(attestation)) => Ok(attestation),
+    //         Ok(Err(e)) => Err(anyhow!("Retry attempts exhausted: {:?}", e)),
+    //         Err(e) => Err(anyhow!("Task execution failed: {:?}", e)),
+    //     })
+    // }
